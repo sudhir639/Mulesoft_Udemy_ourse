@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="4_propertyfiles_examplesFlow" doc:id="874e49b9-0276-4acd-9640-66acd73449be" >
+		<http:listener doc:name="HTTP-POST" doc:id="63c07166-2029-41f7-b8e7-f621015a095f" config-ref="HTTP_Listener_config" path="${http.path_exercise}" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="97e01e27-3a70-48ec-8602-951f9416ac26" message="#[payload]"/>
+		<set-payload value='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;if(payload.list.word == Mule::p("word")){&#10;	"exist":"YES"&#10;}&#10;else&#10;{&#10;	"exist":"NO"&#10;}]' doc:name="Set Payload" doc:id="106ccd4a-7d95-4200-880a-8feae003dbf7" />
+	</flow>
+</mule>

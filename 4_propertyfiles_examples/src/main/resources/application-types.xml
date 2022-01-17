@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="listwords" format="json">
+      <types:shape format="weave" example="examples/listwords.json"><![CDATA[%dw 2.0
+
+type listwords = {| list: {| word: String |} |} {"example": "{\\\"list\\\":{\\\"word\\\":\\\"summer\\\"}}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#106ccd4a-7d95-4200-880a-8feae003dbf7">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="listwords"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>
