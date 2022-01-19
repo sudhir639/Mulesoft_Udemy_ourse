@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<flow name="5_vm_connector_examplesFlow" doc:id="a8280329-e932-41c8-9233-c25551fa7d85" >
+		<http:listener doc:name="HTTP-GET" doc:id="8242d374-fbe7-4966-ac05-4bb027c194f9" config-ref="HTTP_Listener_config" path="/exercise" allowedMethods="GET">
+			<http:response >
+				<http:body ><![CDATA[#[Mule::p("queue.environment")]]]></http:body>
+			</http:response>
+		</http:listener>
+		<logger level="INFO" doc:name="LOG-START" doc:id="546df0bf-a6b3-4525-b3c0-2702e52c995b" message='"Before Posting to the Queue"'/>
+		<vm:publish doc:name="Publish" doc:id="d1aaf56f-14d8-4e90-a44a-1c6baf6a64fe" config-ref="VM_Config" queueName="queue.examples"/>
+		<logger level="INFO" doc:name="Log-END" doc:id="d263a28a-756b-4797-b869-2c27aa9ba68b" message='"After Posting to the Queue"'/>
+	</flow>
+	<flow name="5_vm_connector_examplesFlow1" doc:id="cd30914d-a449-43f7-a0be-d5c48aa8c036" >
+		<vm:listener queueName="queue.examples" doc:name="Listener" doc:id="aaa5d9ed-ce9b-48b9-b61a-26a67f5b81bc" config-ref="VM_Config">
+			<vm:response >
+				<vm:content ><![CDATA[#[Mule::p("queue.envrionment")]]]></vm:content>
+			</vm:response>
+		</vm:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="770432af-a0d1-4b3c-9046-51c74f232b4c" message='#[Mule::p("queue.environment")]'/>
+	</flow>
+</mule>
