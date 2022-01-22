@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="customers" format="json">
+      <types:shape format="weave" example="examples/customer.json"><![CDATA[%dw 2.0
+
+type customers = {|
+  customers: {|
+    customerId: Number {"typeId": "int"}, 
+    customerName: String
+  |}
+|} {"example": "{\\\"customers\\\":{\\\"customerId\\\":5,\\\"customerName\\\":\\\"Gudimetla\\\"}}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="Songs" format="json">
+      <types:shape format="weave" example="examples/Song.json"><![CDATA[%dw 2.0
+
+type Songs = {|
+  song: {|
+    songId: String, 
+    songName: String
+  |}
+|} {"example": "{\\\"song\\\":{\\\"songId\\\":\\\"5\\\",\\\"songName\\\":\\\"Nothing else matters\\\"}}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#023192a2-0acd-4bb0-baaa-e4ce7b9524d5">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="customers"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#e8baedf2-8f80-4c3e-9e0d-f935edf832b1">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="customers"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#ab3d7a7c-595b-4c2a-985a-35a601c595f1">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="Songs"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

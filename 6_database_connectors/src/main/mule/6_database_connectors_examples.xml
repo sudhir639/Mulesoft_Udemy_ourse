@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<flow name="6_Musics_GET" doc:id="4ec6c7c4-ce1a-4c91-aa48-be506b3d4bb2" >
+		<http:listener doc:name="HTTP-GET" doc:id="7bf55408-c876-41bf-827f-0e10dedb816c" config-ref="HTTP_Listener_config" path="/musics"/>
+		<logger level="INFO" doc:name="Log-Start" doc:id="ced0d0af-e6ab-493c-83d4-fca6c8688848" message='"Log Before Notification"'/>
+		<db:select doc:name="Select Music table" doc:id="eafe9d3d-acc5-4d43-805d-25c5f8314b0f" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM musics]]></db:sql>
+		</db:select>
+		<vm:publish doc:name="Async Logging System" doc:id="bc4608ee-5011-42d1-b6c9-27c0e7713dc4" config-ref="VM_Config" queueName="queue.select"/>
+		<logger level="INFO" doc:name="Log-End" doc:id="3cd2e13d-d55a-4d55-9824-9a166491f582" message='"Log After Notification"'/>
+		<set-payload value='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"musics":payload&#10;}]' doc:name="Set Payload" doc:id="daaba70d-41a4-460f-8fc3-671f29fe5059" />
+	</flow>
+	<flow name="6_database_connectors_examplesFlow" doc:id="785a0369-c730-42cd-ad5b-a4a8d014ce70" >
+		<vm:listener queueName="queue.select" doc:name="Async VM Listener" doc:id="05f3104e-e3d1-4ec9-9bbc-4314ab473b1f" config-ref="VM_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="4a1f3334-2ea6-4205-808e-dcae95d76b41" message='#[{&#10;	"message": "a database call to get all songs has been performed"&#10;}]'/>
+	</flow>
+	<flow name="Add_Music" doc:id="f6e577f6-83a4-448b-b94e-b68ac11c1f2c" >
+		<http:listener doc:name="HTTP-POST" doc:id="689ea72d-d27f-4894-887e-de32af558c3c" config-ref="HTTP_Listener_config" path="/musics" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="5ba982b6-d04e-4e65-87f1-c8958d6bdeb8" message='"Log Before Notification"'/>
+		<db:insert doc:name="Insert into musics" doc:id="ab3d7a7c-595b-4c2a-985a-35a601c595f1" config-ref="Database_Config" autoGenerateKeys="true">
+			<db:sql ><![CDATA[INSERT INTO MUSICS(musicName) VALUES(:NameofMusic)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"NameofMusic":payload.song.songName
+}]]]></db:input-parameters>
+		</db:insert>
+		<vm:publish doc:name="Publish" doc:id="546b8bc9-4275-4218-aaff-1de12ad22fea" config-ref="VM_Config" queueName="queue.insert"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bfa8e905-1918-4708-b514-b343d641cc89" message='"Log After Notification"'/>
+		<choice doc:name="Choice" doc:id="a68e5153-5340-463c-adff-19c4bf1799e5" >
+			<when expression="#[payload.affectedRows&gt;0]">
+				<set-payload value='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"Success":payload&#10;}]' doc:name="Set Payload" doc:id="2c9ebdd5-6f33-46a3-89bf-2d0b5b7ef79b" />
+			</when>
+			<otherwise >
+				<set-payload value='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"Failure":payload&#10;}]' doc:name="Set Payload" doc:id="8b4c43a1-f0f3-4567-9240-59b580a30880" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="6_database_connectors_examplesFlow1" doc:id="8adc869d-0b98-42fc-bbb5-a30f6b5f5d2b" >
+		<vm:listener doc:name="Listener" doc:id="7cd79ecb-bc8f-4347-8d69-712a82037105" config-ref="VM_Config" queueName="queue.insert"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bc3e24b4-f5a4-4568-9b18-1a11dc7e24ba" message='#[{&#10;"message": "a database call to insert a new song has been performed"&#10;&#10;}]'/>
+	</flow>
+</mule>
