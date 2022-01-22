@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<flow name="Create_File" doc:id="af60f81b-0198-4069-8f42-2db8cf3f8231" >
+		<http:listener doc:name="HTTP-POST" doc:id="a2a1f74d-fada-4235-849d-eff84236db2e" config-ref="HTTP_Listener_config" path="/write-file" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="067edffb-ed3f-4deb-b569-9c8af7dcca93" message="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]"/>
+		<set-variable value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload.fileName]" doc:name="Set Variable" doc:id="d7f66a21-ac36-4a78-9df0-b5485026726f" variableName="FileName"/>
+		<file:write doc:name="Write to file" doc:id="b5eb24ce-a133-44f7-af3d-c378658697f1" config-ref="File_Config" path='#["write/"++ vars.FileName ++ ".csv"]' mode="APPEND">
+			<file:content ><![CDATA[#[%dw 2.0
+
+output application/csv header=false
+
+---
+
+payload.customer]]]></file:content>
+		</file:write>
+	</flow>
+	<flow name="FilePolling" doc:id="01da628f-7b03-4cb5-8ae0-c17f49d9a484" >
+		<file:listener doc:name="On New or Updated File" doc:id="5166de41-abbd-4116-94a7-9ddd7d8bd5bb" config-ref="File_Config" directory="write" watermarkMode="CREATED_TIMESTAMP">
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="57a3d2d0-a287-4aae-90ad-b47599708c42" message='#[%dw 2.0&#10;&#10;output application/json&#10;---&#10;{&#10;	"lastModifiedTime":attributes.lastModifiedTime,&#10;	"creationTime":attributes.creationTime,&#10;	"fileName":attributes.fileName&#10;}]'/>
+	</flow>
+	<flow name="Move_Files" doc:id="623d965c-e543-44d8-b71c-b7a7620fea5f" >
+		<http:listener doc:name="HTTP-GET" doc:id="f5a263a8-2145-47f0-9ca7-77a113136e11" config-ref="HTTP_Listener_config" path="/movefile/{filename}" allowedMethods="GET"/>
+		<file:move doc:name="Move Files" doc:id="1db73774-0ff4-455c-a65e-a1f0d30626a4" config-ref="File_Config" sourcePath='#["write/"++ attributes.uriParams.filename ++ ".csv"]' targetPath='#["read/"]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="31380ef4-8d36-4002-bdbf-cae0a25b7fa8" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;"File Moved to a different folder"]'/>
+		<set-payload value='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;"File Moved to another location"]' doc:name="Set Payload" doc:id="aed1f89a-a43e-4bab-964f-2b07ee808c1a" />
+	</flow>
+	<flow name="Read_Files" doc:id="42defb85-e4f0-46b7-b1d4-9754d49ac848" >
+		<http:listener doc:name="HTTP-GET" doc:id="8f30bdf4-421a-4ccd-8258-9137e29b9e8c" config-ref="HTTP_Listener_config" path="/readFiles/{fileName}" allowedMethods="GET"/>
+		<file:read doc:name="Read" doc:id="3926e85a-2ac9-47ba-81be-6d29b8c6235a" config-ref="File_Config" path='#["read/"++ attributes.uriParams.fileName ++ ".csv"]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="825cca49-ebca-4e12-bcc1-813aa316579d" message="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]"/>
+		<set-payload value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]" doc:name="Set Payload" doc:id="0bdbc938-8629-4463-a691-242d5e192bd3" />
+	</flow>
+	<flow name="List_Files_Basic" doc:id="ae3b6a99-a129-4eee-bb01-cb0fffd76fc7" >
+		<http:listener doc:name="HTTP-GET" doc:id="21b782f2-6d9d-493b-8c4b-5085aeaccfd6" config-ref="HTTP_Listener_config" path="/listFiles/{folderName}" allowedMethods="GET"/>
+		<file:list doc:name="List Folders" doc:id="c9328b5c-3d1f-49c0-8bf9-de3393c7e81e" config-ref="File_Config" directoryPath="#[attributes.uriParams.folderName]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8d52b43b-40cc-4208-90fd-1183e7bdece7" message="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="54ccdb09-300e-49b2-bb60-597801b6f954" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;{&#10;	"typeOfPayload": typeOf(payload)&#10;}]'/>
+		<set-payload value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;payload]" doc:name="Set Payload" doc:id="50c08b2d-fc46-4352-885f-79c362d2dea0" />
+	</flow>
+	<flow name="List_Files_Intermediate" doc:id="af70f364-bdd6-4466-a63d-150787866d15" >
+		<http:listener doc:name="HTTP-GET" doc:id="5c663b6d-4596-4e89-80cf-b958d6278944" config-ref="HTTP_Listener_config" path="/listFilesIntermediate" allowedMethods="GET"/>
+		<file:list doc:name="List all Files in the \write Folder" doc:id="86d4929a-532c-4635-834b-498c352f8c96" config-ref="File_Config" directoryPath="write"/>
+		<logger level="INFO" doc:name="Logger" doc:id="ba2b85b2-264e-4701-82ef-c7eb6a2d8cce" message="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;payload]"/>
+		<foreach doc:name="For Each" doc:id="9c213ad0-7309-4a67-a0d9-b79bf5ad13b9" collection="#[payload]">
+			<choice doc:name="Validate if item is file or folder" doc:id="6261a3e7-fce6-4714-a483-36f91668de84" >
+				<when expression="#[attributes.directory == false]">
+					<logger level="INFO" doc:name="Logger" doc:id="80253f5c-f38e-44c4-bf14-d43ff750abdf" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"File Found":attributes.fileName&#10;}]'/>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Logger" doc:id="aa7c2fcf-f7a3-4938-9f6e-253933b7ecc3" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"Folder Found":attributes.fileName&#10;}]'/>
+				</otherwise>
+			</choice>
+		</foreach>
+		<set-payload value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]" doc:name="Set Payload" doc:id="423dec1c-61e7-4641-a095-0154350e9424" />
+	</flow>
+	<flow name="7_assignment_part1" doc:id="cc6c6dcf-fe7b-45d6-859b-3d764ff201be" >
+		<http:listener doc:name="HTTP-GET" doc:id="8b3c192d-1c6b-4997-83fb-377c91e6cfa4" config-ref="HTTP_Listener_config" path="/countries" allowedMethods="GET"/>
+		<db:select doc:name="Select from countries" doc:id="c68bdd39-5d30-4f4c-8d06-f9eeb980a8f5" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM countries]]></db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="820fd646-0563-4468-8fc8-95e0670ae691" message="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]"/>
+		<set-payload value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]" doc:name="return countries" doc:id="6b3d5f54-8f6a-4465-8a9c-866e633c68d2" />
+	</flow>
+	<flow name="7_assignment_part2" doc:id="836b3e20-1922-4e7e-97b3-11003042d965" >
+		<http:listener doc:name="HTTP-POST" doc:id="0ed5d14b-1334-4cf7-981f-9782cf46b183" config-ref="HTTP_Listener_config" path="/countries" allowedMethods="POST"/>
+		<db:insert doc:name="Insert" doc:id="0ffb0697-393f-4b4b-941d-49b6e1eee832" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO countries(countryName) VALUES (:contName)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"contName": payload.country.countryName
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="509d7d4d-8459-4cd5-9c81-81e9285348ae" message="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]"/>
+		<set-payload value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload.affectedRows]" doc:name="Set Payload" doc:id="1729c919-01c8-43a1-9b34-8b4adf9a49d0" />
+	</flow>
+	<flow name="get_all_countries" doc:id="6374f566-4ac8-4a5d-a51b-3f007d41d6bd" >
+		<http:listener doc:name="HTTP-GET" doc:id="ddc09a05-358e-42b1-9f3d-59441e97d248" config-ref="HTTP_Listener_config" path="/exercisegetcountries" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Logger-Before Retreiving" doc:id="42cacbee-ec76-42c9-8bec-1edde8b48d79" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;{&#10;	"flowName": flow.name,&#10;	"message":"Log Before Notification"&#10;}]'/>
+		<db:select doc:name="Select from countries" doc:id="42c7c5bc-ec41-4bed-b7d9-12ff928956d3" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM countries]]></db:sql>
+		</db:select>
+		<vm:publish doc:name="Publish" doc:id="39ba9270-5d58-4bad-bbe7-710c65c964ea" config-ref="VM_Config" queueName="queue.countries"/>
+		<logger level="INFO" doc:name="Logger -After Retreiving" doc:id="aa9af1b4-67dd-45e9-acdb-ef4edf4e842f" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;{&#10;	"flowName": flow.name,&#10;	"message":"Log After Notification"&#10;}]'/>
+		<set-payload value="#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;payload]" doc:name="Set Payload" doc:id="7050b19f-e7e4-4c60-b573-4fe0c495e48c" />
+	</flow>
+	<flow name="7_file_connectorsFlow" doc:id="41069017-27d8-4ec8-b2a5-a9945d295acf" >
+		<vm:listener doc:name="Listener" doc:id="21cf2a1d-2cc8-4c5f-ac55-4f22477452ef" config-ref="VM_Config" queueName="queue.countries"/>
+		<file:write doc:name="Write" doc:id="17b1c61d-2638-4ad7-91f0-3c2c0b9c84b5" config-ref="File_Config" path="write/ReadContent.csv">
+			<file:content ><![CDATA[#[%dw 2.0
+
+output application/csv
+
+---
+
+{
+	"fileName": "get_all_countries",
+	"message": "a database call to get all countries has been performed",
+	"timestamp": now()
+}]]]></file:content>
+		</file:write>
+		<logger level="INFO" doc:name="Logger" doc:id="9014f0cf-351d-46f5-9af2-17c649148680" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"fileName": "get_all_countries",&#10;	"message": "a database call to get all countries has been performed",&#10;	"timestamp": now()&#10;}]'/>
+	</flow>
+	<flow name="insert_new_country" doc:id="8461f3dc-526a-4350-8278-a917d24d2987" >
+		<http:listener doc:name="HTTP-POST" doc:id="f5308e0b-a162-4e46-95e4-cefd2daaf050" config-ref="HTTP_Listener_config" path="/countriesExercise" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger before Notification" doc:id="3c47af7d-0f93-44ca-b52a-4b9e7ccfa456" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"flowName": flow.name,&#10;	"message": "Log Before Notification"&#10;}]'/>
+		<db:insert doc:name="Insert into countries" doc:id="8fcf955e-ce81-4c4d-8429-6b8dd3b728a6" config-ref="Database_Config" autoGenerateKeys="true">
+			<db:sql ><![CDATA[INSERT INTO countries(countryName) VALUES (:nameCountry)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"nameCountry":payload.country.countryName
+}]]]></db:input-parameters>
+		</db:insert>
+		<vm:publish doc:name="Publish" doc:id="6b3a1021-dba8-496c-a45c-5f7e9e261118" config-ref="VM_Config" queueName="queue.addcountries"/>
+		<logger level="INFO" doc:name="Logger" doc:id="fe9a40cc-c4d2-4c6a-b7df-80a3ceaaa6bc" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"flowName": flow.name,&#10;	"message": "Log After Notification"&#10;}]'/>
+		<set-payload value="#[payload.affectedRows]" doc:name="Set Payload" doc:id="4a0a4c76-2e16-4e36-842c-374c384f8854" />
+	</flow>
+	<flow name="7_file_connectorsFlow1" doc:id="f3055577-c3e5-427a-9cec-2abf142be730" >
+		<vm:listener queueName="queue.addcountries" doc:name="Listener" doc:id="d409f225-ac2a-4840-9d2a-b7f2d7f006a2" config-ref="VM_Config"/>
+		<file:write doc:name="Write" doc:id="c4bc27bf-e8fd-43f4-b677-6e0dee0ca6b4" config-ref="File_Config" path="write/addContent.csv">
+			<file:content ><![CDATA[#[%dw 2.0
+
+output application/json
+
+---
+
+{
+	"fileName": "add_countries",
+	"message": "a database call to add new Country has been performed",
+	"timestamp": now()
+}]]]></file:content>
+		</file:write>
+		<logger level="INFO" doc:name="Logger" doc:id="3c7b69cf-040d-4160-942d-4622a289286f" message='#[%dw 2.0&#10;&#10;output application/json&#10;&#10;---&#10;&#10;{&#10;	"fileName": "add_countries",&#10;	"message": "a database call to add new Country has been performed",&#10;	"timestamp": now()&#10;}]'/>
+	</flow>
+</mule>

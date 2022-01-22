@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="fileexample" format="json">
+      <types:shape format="weave" example="examples/filexample.json"><![CDATA[%dw 2.0
+
+type fileexample = {|
+  fileName: String, 
+  customer: {|
+    customerId: String, 
+    customerName: String
+  |}
+|} {"example": "{\\\"fileName\\\":\\\"file1\\\",\\\"customer\\\":{\\\"customerId\\\":\\\"5\\\",\\\"customerName\\\":\\\"sandy\\\"}}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="cont" format="json">
+      <types:shape format="weave" example="examples/countrydata-2.json"><![CDATA[%dw 2.0
+
+type cont = {|
+  country: {|
+    countryId: String, 
+    countryName: String
+  |}
+|} {"example": "{\\\"country\\\":{\\\"countryId\\\":\\\"5\\\",\\\"countryName\\\":\\\"Portugal\\\"}}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#af60f81b-0198-4069-8f42-2db8cf3f8231">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="fileexample"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#067edffb-ed3f-4deb-b569-9c8af7dcca93">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="fileexample"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#d7f66a21-ac36-4a78-9df0-b5485026726f">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="fileexample"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#b5eb24ce-a133-44f7-af3d-c378658697f1">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="fileexample"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#0ffb0697-393f-4b4b-941d-49b6e1eee832">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="cont"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#8fcf955e-ce81-4c4d-8429-6b8dd3b728a6">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="cont"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>
